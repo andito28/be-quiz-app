@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const { sendEmail } = require("../helper/emailhelper");
 const mail = require("../mail/otpMail");
 const userModel = require("../models/user");
+const jwt = require("jsonwebtoken");
 
 const generateRandomNumber = () => {
   return Math.floor(100000 + Math.random() * 900000);
@@ -56,7 +57,6 @@ const register = async (req, res) => {
         message: "email has been registered",
       });
     }
-
     //call function send otp
     sendOtp(name, email, otp);
 
@@ -71,6 +71,71 @@ const register = async (req, res) => {
   }
 };
 
+//function login
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const checkUser = await userModel.findEmail(email);
+
+    if (checkUser.length < 1) {
+      return res.status(400).json({
+        message: "incorrect email",
+      });
+    }
+
+    const match = await bcrypt.compare(password, checkUser[0].password);
+
+    if (!match) {
+      return res.status(400).json({
+        message: "incorrect password",
+      });
+    }
+    const userId = checkUser[0].id;
+    const name = checkUser[0].name;
+
+    const token = jwt.sign(
+      { userId, name, email },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
+
+    res.status(200).json({
+      token: token,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error,
+    });
+  }
+};
+
+//function verify otp
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const checkOtp = await userModel.findOtp(email, otp);
+
+    if (checkOtp.length > 0) {
+      await userModel.updateStatusUser(checkOtp[0].email);
+      res.status(200).json({
+        message: "OTP verification successful",
+      });
+    } else {
+      res.status(400).json({
+        message: "The provided OTP is not correct",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: error,
+    });
+  }
+};
+
 module.exports = {
   register,
+  verifyOtp,
+  login,
 };
