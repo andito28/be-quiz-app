@@ -39,9 +39,16 @@ const updateStatusUser = (email) => {
   return db.execute(query, values);
 };
 
+const updateOtp = (otp, email) => {
+  let query = "UPDATE users SET otp = ? WHERE email = ?";
+  let values = [otp, email];
+  return db.execute(query, values);
+};
+
 module.exports = {
   createUser,
   findEmail,
   findOtp,
   updateStatusUser,
+  updateOtp,
 };

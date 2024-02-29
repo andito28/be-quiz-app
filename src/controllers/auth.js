@@ -71,6 +71,29 @@ const register = async (req, res) => {
   }
 };
 
+//function resend OTP
+const resendOtp = async (req, res) => {
+  const { email } = req.body;
+
+  const checkEmail = await userModel.findEmail(email);
+
+  if (checkEmail.length < 1 || checkEmail[0].is_active == 1) {
+    return res.status(400).json({
+      message: "incorrect email or user is active",
+    });
+  }
+
+  let otp = generateRandomNumber();
+  let name = checkEmail[0].name;
+
+  await userModel.updateOtp(otp, email);
+  sendOtp(name, email, otp);
+
+  return res.status(201).json({
+    message: "success resend OTP",
+  });
+};
+
 //function login
 const login = async (req, res) => {
   try {
@@ -138,4 +161,5 @@ module.exports = {
   register,
   verifyOtp,
   login,
+  resendOtp,
 };
