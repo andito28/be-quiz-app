@@ -74,7 +74,6 @@ const register = async (req, res) => {
 //function resend OTP
 const resendOtp = async (req, res) => {
   const { email } = req.body;
-
   const checkEmail = await userModel.findEmail(email);
 
   if (checkEmail.length < 1 || checkEmail[0].is_active == 1) {
@@ -120,7 +119,7 @@ const login = async (req, res) => {
       { userId, name, email },
       process.env.ACCESS_TOKEN_SECRET,
       {
-        expiresIn: "1h",
+        expiresIn: "1d",
       }
     );
 
