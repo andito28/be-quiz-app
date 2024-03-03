@@ -1,41 +1,42 @@
 const quizModel = require("../models/quiz");
+const fs = require("fs");
 
-const multer = require("multer");
-
-// Konfigurasi penyimpanan dan validasi untuk multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "src/public/coverquiz");
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix =
-      Date.now() +
-      "-" +
-      Math.round(Math.random() * 1e9) +
-      "-" +
-      file.originalname;
-    cb(null, uniqueSuffix);
-  },
-});
-
-const upload = multer({ storage: storage });
+function deletFile(filePath) {
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error("Error deleting file:", err);
+      return;
+    }
+  });
+}
 
 const createQuiz = (req, res) => {
-  // Menggunakan middleware upload di sini
-  upload.single("cover")(req, res, (err) => {
-    if (err) {
-      console.error("Error during file upload:", err);
-      return res.status(400).json({ error: err.message });
+  if (req.file) {
+    const allowedMimes = ["image/jpeg", "image/png", "image/gif"];
+    const maxSize = 2 * 1024 * 1024;
+    // console.log(allowedMimes.includes(req.file.mimetype));
+    if (allowedMimes.includes(req.file.mimetype) == false) {
+      deletFile(req.file.path);
+      return res.status(402).json({
+        message: "Invalid file type. Only JPEG, PNG, and GIF are allowed.",
+      });
     }
-    console.log("File uploaded successfully:", req.file);
-    res.json({
-      message: "File berhasil diunggah",
-      file: req.file,
-    });
+
+    if (req.file.size > maxSize) {
+      deletFile(req.file.path);
+      return res.status(402).json({
+        message:
+          "File size exceeds the limit (2 MB). Please upload a smaller file.",
+      });
+    }
+  }
+
+  res.json({
+    message: "Quiz berhasil dibuat",
+    formData: req.body,
   });
 };
 
 module.exports = {
   createQuiz,
-  upload,
 };
